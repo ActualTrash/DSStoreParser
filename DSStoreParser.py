@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # DSStoreParser
 # ------------------------------------------------------
@@ -18,6 +18,7 @@
 # permissions and limitations under the License.
 
 # Modified by: Nicole Ibrahim 
+# Ported to python3 by ActualTrash
 
 import fnmatch
 import unicodecsv as csv
@@ -28,7 +29,7 @@ from time import (gmtime, strftime)
 import datetime
 from ds_store_parser import ds_store_handler
 from ds_store_parser.ds_store.store import codes as type_codes
-import StringIO
+import io
 '''
 try:
     from dfvfs.analyzer import analyzer
@@ -107,7 +108,7 @@ def main():
         options.error(IMPORT_ERROR)
     '''
     s_path = []
-    s_name = u'*.ds_store*'
+    s_name = '*.ds_store*'
     
     opts_source = options.source
     opts_out = options.outdir
@@ -129,7 +130,7 @@ def main():
             )
             
     except Exception as exp:
-        print 'Unable to proceed. Error creating reports. Exceptions: {}'.format(exp)
+        print('Unable to proceed. Error creating reports. Exceptions: {}'.format(exp))
         sys.exit(0)
 
     # Accounting for paths ending with \"
@@ -181,8 +182,8 @@ def main():
                 stat_dict = record_handler.get_stats(os.lstat(ds_file))
                 parse(ds_file, file_io, stat_dict, record_handler, opts_source, opts_check)
 
-    print 'Records Parsed: {}'.format(records_parsed)
-    print 'Reports are located in {}'.format(options.outdir)
+    print('Records Parsed: {}'.format(records_parsed))
+    print('Reports are located in {}'.format(options.outdir))
 
 def directory_recurse(file_system_path_spec, parent_path, record_handler, opts_source, opts_check):
     path_spec = path_spec_factory.Factory.NewPathSpec(
@@ -203,7 +204,7 @@ def directory_recurse(file_system_path_spec, parent_path, record_handler, opts_s
                 dir_path = os.path.join(parent_path, sub_file_entry.name).replace("\\", "/")
                     
                 if dir_path.count('/') == 1:
-                    print 'Searching %s for .DS_Stores' % dir_path
+                    print('Searching %s for .DS_Stores' % dir_path)
                     
                 new_path_spec = path_spec_factory.Factory.NewPathSpec(
                     path_spec.type_indicator,
@@ -262,11 +263,12 @@ def parse(ds_file, file_io, stat_dict, record_handler, source, opts_check):
             exp,
             ds_file.encode('utf-8', errors='replace')
             )
-        print err_msg.replace('\n', '')
+        print(err_msg.replace('\n', ''))
             
     if ds_handler:
-        print "DS_Store Found: ", ds_file.encode('utf-8', errors='replace')
+        print("DS_Store Found: ", ds_file.encode('utf-8', errors='replace'))
         
+        print(ds_handler.__dict__)
         for rec in ds_handler:
             record_handler.write_record(
                 rec, 
@@ -290,7 +292,8 @@ def parse(ds_file, file_io, stat_dict, record_handler, source, opts_check):
         
         
 def commandline_arg(bytestring):
-    unicode_string = bytestring.decode(sys.getfilesystemencoding())
+    #unicode_string = bytestring.decode(sys.getfilesystemencoding())
+    unicode_string = bytestring
     return unicode_string
 
     
@@ -300,89 +303,89 @@ class RecordHandler(object):
         
         if opts_check:
             fields = [
-                u"generated_path", 
-                u"record_filename",  # filename
-                u"record_type",      # code
-                u"record_format",    # type
-                u"record_data",      # value
-                u"file_exists", 
-                u"src_create_time",
-                u"src_mod_time",
-                u"src_acc_time",
-                u"src_metadata_change_time",
-                u"src_permissions",
-                u"src_size",
-                u"block",
-                u"src_file"]
+                "generated_path", 
+                "record_filename",  # filename
+                "record_type",      # code
+                "record_format",    # type
+                "record_data",      # value
+                "file_exists", 
+                "src_create_time",
+                "src_mod_time",
+                "src_acc_time",
+                "src_metadata_change_time",
+                "src_permissions",
+                "src_size",
+                "block",
+                "src_file"]
         
         else:
             fields = [
-                u"generated_path", 
-                u"record_filename",  # filename
-                u"record_type",      # code
-                u"record_format",    # type
-                u"record_data",      # value
-                u"src_create_time",
-                u"src_mod_time",
-                u"src_acc_time",
-                u"src_metadata_change_time",
-                u"src_permissions",
-                u"src_size",
-                u"block",
-                u"src_file"]
+                "generated_path", 
+                "record_filename",  # filename
+                "record_type",      # code
+                "record_format",    # type
+                "record_data",      # value
+                "src_create_time",
+                "src_mod_time",
+                "src_acc_time",
+                "src_metadata_change_time",
+                "src_permissions",
+                "src_size",
+                "block",
+                "src_file"]
 
         
         # Codes that do not always mean that a folder was opened
         # Some codes are for informational purposes and may indicate
         # the parent was opened not the path reported
         self.other_info_codes = [
-            u"Iloc",
-            u"dilc",
-            u"cmmt",
-            u"clip",
-            u"extn",
-            u"logS",
-            u"lg1S",
-            u"modD",
-            u"moDD",
-            u"phyS",
-            u"ph1S",
-            u"ptbL",
-            u"ptbN"
+            "Iloc",
+            "dilc",
+            "cmmt",
+            "clip",
+            "extn",
+            "logS",
+            "lg1S",
+            "modD",
+            "moDD",
+            "phyS",
+            "ph1S",
+            "ptbL",
+            "ptbN"
         ]
         
         # Codes that indicate the finder window changed for an open folder
         # or the folders were opened.
         self.folder_interactions = [
-            u"dscl",
-            u"fdsc",
-            u"vSrn",
-            u"BKGD",
-            u"ICVO",
-            u"LSVO",
-            u"bwsp",
-            u"fwi0",
-            u"fwsw",
-            u"fwvh",
-            u"glvp",
-            u"GRP0",
-            u"icgo",
-            u"icsp",
-            u"icvo",
-            u"icvp",
-            u"icvt",
-            u"info",
-            u"lssp",
-            u"lsvC",
-            u"lsvo",
-            u"lsvt",
-            u"lsvp",
-            u"lsvP",
-            u"pict",
-            u"bRsV",
-            u"pBBk",
-            u"pBB0",
-            u"vstl"
+            "dscl",
+            "fdsc",
+            "vSrn",
+            "BKGD",
+            "ICVO",
+            "LSVO",
+            "bwsp",
+            "fwi0",
+            "fwsw",
+            "fwvh",
+            "glvp",
+            "GRP0",
+            "icgo",
+            "icsp",
+            "icvo",
+            "icvp",
+            "icvt",
+            "info",
+            "lssp",
+            "lsvC",
+            "lsvo",
+            "lsvt",
+            "lsvp",
+            "lsvP",
+            "pict",
+            "bRsV",
+            "pBBk",
+            "pBB0",
+            "vstl"
         ]
              
         self.fa_writer = csv.DictWriter(
@@ -407,10 +410,10 @@ class RecordHandler(object):
         self.oi_writer.writeheader()
         
         # Rename fields to match record parsing
-        fields[1] = u'filename'
-        fields[2] = u'code'
-        fields[3] = u'type'
-        fields[4] = u'value'
+        fields[1] = 'filename'
+        fields[2] = 'code'
+        fields[3] = 'type'
+        fields[4] = 'value'
 
     def write_record(self, record, ds_file, source, stat_dict, opts_check):
         global records_parsed
@@ -441,9 +444,9 @@ class RecordHandler(object):
                     record_dict["file_exists"] = "[NOT EXISTS]"
             
             if record_dict["code"] == "vstl":
-                record_dict["value"] = unicode(self.style_handler(record_dict))
+                record_dict["value"] = str(self.style_handler(record_dict))
                 
-            record_dict["value"] = unicode(record_dict["value"])
+            record_dict["value"] = str(record_dict["value"])
             
             records_parsed = records_parsed + 1
             
@@ -470,12 +473,16 @@ class RecordHandler(object):
             str(stat_dict['src_gid'])
            )
            
-        if 'Codec' in record_dict["type"]:
+        if 'Codec' in str(record_dict["type"]):
             record_dict["type"] = 'blob (%s)' % record_dict["type"]
             
-        check_code = record_dict["code"]
+        check_code = record_dict["code"].decode()
         
-        record_dict["code"] = record_dict["code"] + " (" + unicode(self.update_descriptor(record_dict)) + ")"
+        # record_dict["code"] = record_dict["code"].decode() + " (" + str(self.update_descriptor(record_dict)) + ")"
+        # print('pre-moistness', record_dict['code'])
+        record_dict["code"] = record_dict["code"].decode() + " (" + self.update_descriptor(record_dict) + ")"
+        # print('moistness', record_dict['code'])
+        # record_dict["code"] = record_dict["code"] + b' (' + self.update_descriptor(record_dict) + b')'
         
         self.fa_writer.writerow(record_dict)
 
@@ -486,7 +493,8 @@ class RecordHandler(object):
             self.fc_writer.writerow(record_dict)
 
         else:
-            print 'Code not accounted for.', record_dict["code"]
+            # TODO Another possible start of the trouble sequence
+            print('Code not accounted for.', record_dict["code"])
         
         
     def get_stats(self, stat_result):
@@ -527,7 +535,7 @@ class RecordHandler(object):
         return stat_dict
 
     def convert_time(self, timestamp):
-        return unicode(datetime.datetime.utcfromtimestamp(timestamp))
+        return str(datetime.datetime.utcfromtimestamp(timestamp))
         
         
     def perm_to_text(self, perm):
@@ -624,23 +632,24 @@ class RecordHandler(object):
         types_dict = type_codes
             
         try:
-            code_desc = unicode(types_dict[record["code"]])
+            code_desc = str(types_dict[record["code"].decode()])
             
         except:
-            code_desc = u"Unknown Code: {0}".format(record["code"])
+            # TODO This is the start of the trouble sequence
+            code_desc = "Unknown Code: {0}".format(record["code"])
             
         return code_desc
 
         
     def style_handler(self, record):
         styles_dict = {
-            '\x00\x00\x00\x00': u"0x00000000: Null",
-            "none": u"none: Unselected",
-            "icnv": u"icnv: Icon View",
-            "clmv": u"clmv: Column View",
-            "Nlsv": u"Nlsv: List View",
-            "glyv": u"glyv: Gallery View",
-            "Flwv": u"Flwv: CoverFlow View"
+            '\x00\x00\x00\x00': "0x00000000: Null",
+            "none": "none: Unselected",
+            "icnv": "icnv: Icon View",
+            "clmv": "clmv: Column View",
+            "Nlsv": "Nlsv: List View",
+            "glyv": "glyv: Gallery View",
+            "Flwv": "Flwv: CoverFlow View"
             }
 
         try: 

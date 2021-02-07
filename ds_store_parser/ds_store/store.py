@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
+
+
+
 
 import binascii
 import struct
 import biplist
 import mac_alias
 import re
-import StringIO
+import io
 import hashlib
+import sys
 
 try:
     next
 except NameError:
-    next = lambda x: x.next()
+    next = lambda x: x.__next__()
 
 from . import buddy
 
@@ -26,22 +27,23 @@ class IlocCodec(object):
         else:
             x, y, z, a = struct.unpack(b'>IIII', bytesData[:16])
             
-        h_str = str(bytesData).encode('hex')
+        #h_str = str(bytesData).encode('hex')
+        h_str = binascii.hexlify(bytesData)
         
         r_value_hor = x
         r_value_ver = y
         r_value_idx = z
-        if r_value_hor == 4294967295L:
-            r_value_hor = u"Null"
-        if r_value_ver == 4294967295L:
-            r_value_ver = u"Null"
-        if r_value_idx == 4294967295L:
-            r_value_idx = u"Null"
+        if r_value_hor == 4294967295:
+            r_value_hor = "Null"
+        if r_value_ver == 4294967295:
+            r_value_ver = "Null"
+        if r_value_idx == 4294967295:
+            r_value_idx = "Null"
 
         val = "Location: ({0}, {1}), Selected Index: {2}, Unknown: {3}".format(
-            unicode(r_value_hor), 
-            unicode(r_value_ver), 
-            unicode(r_value_idx),
+            str(r_value_hor), 
+            str(r_value_ver), 
+            str(r_value_idx),
             h_str[24:32]
         )
 
@@ -97,7 +99,8 @@ class DilcCodec(object):
             u, v, w, x, y, z, a, b = struct.unpack_from(b'>IIIIIIII', bytes(bytesData[:32]))
         else:
             u, v, w, x, y, z, a, b = struct.unpack(b'>IIIIIIII', bytesData[:32])
-        h_str = str(bytesData).encode('hex')
+        # h_str = str(bytesData).encode('hex')
+        h_str = binascii.hexlify(bytesData)
         if int(h_str[16:24], 16) > 65535:
             h_pos = "IconPosFromRight: " + str(4294967295 - int(h_str[16:24], 16))
         else:
@@ -108,15 +111,15 @@ class DilcCodec(object):
         else:
             v_pos = "IconPosFromTop: " + str(int(h_str[24:32], 16))
         h_array = (
-            "Unk1: "+h_str[:8],
+            "Unk1: "+h_str[:8].decode(),
             "GridQuadrant: "+str(int(h_str[8:12],16)),        # short?: Indicates the quadrant on the screen the icon is located. 1=top right, 2=bottom right, 3=bottom left, 4=top left
-            "Unk2: "+h_str[12:16],       # short?: Unknown. Values other than 0 have been observed
+            "Unk2: "+h_str[12:16].decode(),       # short?: Unknown. Values other than 0 have been observed
             h_pos,       # position from right/left of screen. 0xFF indicates right position
             v_pos,       # position from top/bottom of screen. 0xFF indicates bottom position
             "GridIconPosFromLeft: "+str(int(h_str[32:40], 16)),       # position from left
             "GridIconPosFromTop: "+str(int(h_str[40:48], 16)),       # position from top
-            "Unk3: "+h_str[48:56],
-            "Unk4: "+h_str[56:64]
+            "Unk3: "+h_str[48:56].decode(),
+            "Unk4: "+h_str[56:64].decode()
         )
         
         val = str(h_array).replace("', u'",", ").replace("'","").replace("(u","(")
@@ -125,19 +128,21 @@ class DilcCodec(object):
 
 class PlistCodec(object):
     @staticmethod
-    def decode(bytes):
+    def decode(bytes_):
         try:
-            return biplist.readPlistFromString(bytes)
+            return biplist.readPlistFromString(bytes_)
         except Exception as exp:
-            return str(exp) + ': ' + str(bytes).encode('hex')
+            # return str(exp) + ': ' + str(bytes).encode('hex')
+            return str(exp) + ': ' + binascii.hexlify(bytes_).decode()
 
 class BookmarkCodec(object):
     @staticmethod
-    def decode(bytes):
+    def decode(bytes_):
         try:
-            return mac_alias.Bookmark.from_bytes(bytes)
+            return mac_alias.Bookmark.from_bytes(bytes_)
         except Exception as exp:
-            return str(exp) + ': ' + str(bytes).encode('hex')
+            # return str(exp) + ': ' + str(bytes_).encode('hex')
+            return str(exp) + ': ' + binascii.hexlify(bytes_).decode()
 
 # This list tells the code how to decode particular kinds of entry in the
 # .DS_Store file.  This is really a convenience, and we currently only
@@ -158,48 +163,48 @@ codecs = {
     }
     
 codes = {
-    "BKGD": u"Finder Folder Background Picture",
-    "ICVO": u"Icon View Options",
-    "Iloc": u"Icon Location",              # Location and Index
-    "LSVO": u"List View Options",
-    "bwsp": u"Browser Window Properties",
-    "cmmt": u"Finder Comments",
-    "clip": u"Text Clipping",
-    "dilc": u"Desktop Icon Location",
-    "dscl": u"Directory is Expanded in List View",
-    "fdsc": u"Directory is Expanded in Limited Finder Window",
-    "extn": u"File Extension",
-    "fwi0": u"Finder Window Information",
-    "fwsw": u"Finder Window Sidebar Width",
-    "fwvh": u"Finder Window Sidebar Height",
-    "glvp": u"Gallery View Properties",
-    "GRP0": u"Group Items By",
-    "icgo": u"icgo. Unknown. Icon View Options?",
-    "icsp": u"icsp. Unknown. Icon View Properties?",
-    "icvo": u"Icon View Options",
-    "icvp": u"Icon View Properties",
-    "icvt": u"Icon View Text Size",
-    "info": u"info: Unknown. Finder Info?:",
-    "logS": u"Logical Size",
-    "lg1S": u"Logical Size",
-    "lssp": u"List View Scroll Position",
-    "lsvC": u"List View Columns",
-    "lsvo": u"List View Options",
-    "lsvt": u"List View Text Size",
-    "lsvp": u"List View Properties",
-    "lsvP": u"List View Properties",
-    "modD": u"Modified Date",
-    "moDD": u"Modified Date",
-    "phyS": u"Physical Size",
-    "ph1S": u"Physical Size",
-    "pict": u"Background Image",
-    "vSrn": u"Opened Folder in new tab",
-    "bRsV": u"Browse in Selected View",
-    "pBBk": u"Finder Folder Background Image Bookmark",
-    "pBB0": u"Finder Folder Background Image Bookmark",
-    "vstl": u"View Style Selected",
-    "ptbL": u"Trash Put Back Location",
-    "ptbN": u"Trash Put Back Name"
+    "BKGD": "Finder Folder Background Picture",
+    "ICVO": "Icon View Options",
+    "Iloc": "Icon Location",              # Location and Index
+    "LSVO": "List View Options",
+    "bwsp": "Browser Window Properties",
+    "cmmt": "Finder Comments",
+    "clip": "Text Clipping",
+    "dilc": "Desktop Icon Location",
+    "dscl": "Directory is Expanded in List View",
+    "fdsc": "Directory is Expanded in Limited Finder Window",
+    "extn": "File Extension",
+    "fwi0": "Finder Window Information",
+    "fwsw": "Finder Window Sidebar Width",
+    "fwvh": "Finder Window Sidebar Height",
+    "glvp": "Gallery View Properties",
+    "GRP0": "Group Items By",
+    "icgo": "icgo. Unknown. Icon View Options?",
+    "icsp": "icsp. Unknown. Icon View Properties?",
+    "icvo": "Icon View Options",
+    "icvp": "Icon View Properties",
+    "icvt": "Icon View Text Size",
+    "info": "info: Unknown. Finder Info?:",
+    "logS": "Logical Size",
+    "lg1S": "Logical Size",
+    "lssp": "List View Scroll Position",
+    "lsvC": "List View Columns",
+    "lsvo": "List View Options",
+    "lsvt": "List View Text Size",
+    "lsvp": "List View Properties",
+    "lsvP": "List View Properties",
+    "modD": "Modified Date",
+    "moDD": "Modified Date",
+    "phyS": "Physical Size",
+    "ph1S": "Physical Size",
+    "pict": "Background Image",
+    "vSrn": "Opened Folder in new tab",
+    "bRsV": "Browse in Selected View",
+    "pBBk": "Finder Folder Background Image Bookmark",
+    "pBB0": "Finder Folder Background Image Bookmark",
+    "vstl": "View Style Selected",
+    "ptbL": "Trash Put Back Location",
+    "ptbN": "Trash Put Back Name"
 }
 
 types = (
@@ -249,6 +254,7 @@ class DSStoreEntry(object):
 
         # Next, read the code and type
         code, typecode = block.read(b'>4s4s')
+        # print('ITHINKIFOUND', code, typecode)
 
         # Finally, read the data
         if typecode == b'bool':
@@ -273,7 +279,7 @@ class DSStoreEntry(object):
         else:
             raise ValueError('Unknown type code "%s"' % typecode)
 
-        return DSStoreEntry(filename, code, typecode, value, node)
+        return DSStoreEntry(filename, code.decode(), typecode, value, node)
 
     def __lt__(self, other):
         if not isinstance(other, DSStoreEntry):
@@ -348,6 +354,7 @@ class DSStore(object):
         return DSStore(store)
 
     def _get_block(self, number):
+        # print('blocc', self._store.get_block(number))
         return self._store.get_block(number)
 
     # Iterate over the tree, starting at `node'
@@ -369,15 +376,16 @@ class DSStore(object):
                         yield t
                     
                     e = DSStoreEntry.read(block, node)
-                    chk = e.filename.encode('ascii', 'replace') + str(e.type) + str(e.code) + self.src_name.encode('ascii', 'replace') + str(e.value).encode('hex')
+                    print('eeeyus', e)
+                    chk = e.filename.encode('ascii', 'replace') + str(e.type).encode() + e.code + self.src_name.encode('ascii', 'replace') + binascii.hexlify(str(e.value).encode())
                     e_hash = hashlib.md5(chk).hexdigest()
                     
-                    if not self.dict_list.has_key(e_hash):
+                    if e_hash not in self.dict_list:
                         self.entries[e_hash] = e
                         self.entries[e_hash].node = 'allocated ' + str(node)
-                        self.dict_list[e_hash] = chk + 'allocated ' + str(node)
+                        self.dict_list[e_hash] = chk.decode() + 'allocated ' + str(node)
                         
-                    elif self.dict_list.has_key(e_hash) and 'unallocated' in self.dict_list[e_hash]:
+                    elif e_hash in self.dict_list and 'unallocated' in self.dict_list[e_hash]:
                         self.entries[e_hash] = e
                         self.entries[e_hash].node = self.dict_list[e_hash].split('unallocated')[1] + 'hello, reallocated in {}'.format(node)
                         self.dict_list[e_hash] = self.dict_list[e_hash] + ', reallocated in {}'.format(node)
@@ -385,7 +393,7 @@ class DSStore(object):
                         sys.exit()
 
                 if counter == count and block.tell() < len(block):
-                    slack = unicode(block)[block.tell() * 2:]
+                    slack = str(block)[block.tell() * 2:]
                     self.read_slack(slack, node)
                     
                 for t in self._traverse(next_node):
@@ -402,15 +410,16 @@ class DSStore(object):
                 for n in range(count):
                     counter = counter + 1
                     e = DSStoreEntry.read(block, node)
-                    chk = e.filename.encode('ascii', 'replace') + str(e.type) + str(e.code) + self.src_name.encode('ascii', 'replace') + str(e.value).encode('hex')
+                    #chk = e.filename.encode('ascii', 'replace') + str(e.type) + str(e.code) + self.src_name.encode('ascii', 'replace') + str(e.value).encode('hex')
+                    chk = e.filename.encode('ascii', 'replace') + str(e.type).encode() + e.code + self.src_name.encode('ascii', 'replace') + binascii.hexlify(str(e.value).encode())
                     e_hash = hashlib.md5(chk).hexdigest()
                     
-                    if not self.dict_list.has_key(e_hash):
+                    if e_hash not in self.dict_list:
                         self.entries[e_hash] = e
                         self.entries[e_hash].node = 'allocated ' + str(node)
-                        self.dict_list[e_hash] = chk + 'allocated ' + str(node)
+                        self.dict_list[e_hash] = chk.decode() + 'allocated ' + str(node)
                         
-                    elif self.dict_list.has_key(e_hash) and 'unallocated' in self.dict_list[e_hash]:
+                    elif e_hash in self.dict_list and 'unallocated' in self.dict_list[e_hash]:
                         self.entries[e_hash] = e
                         self.entries[e_hash].node = self.dict_list[e_hash].split('unallocated')[1] + 'unallocated, reallocated in {}'.format(node)
                         self.dict_list[e_hash] = self.dict_list[e_hash] + ', reallocated in {}'.format(node)
@@ -432,11 +441,16 @@ class DSStore(object):
         return self._traverse(self._rootnode)
         
     def read_slack(self, slack, node):
-        slack = slack.decode('hex')
+        print('slackers', slack)
+        # slack = slack.decode('hex')
+        slack = bytes.fromhex(slack)
+        # print('slacc', slack)
+        # print('slaccc', slack.decode('ISO-8859-1'))
+        slack = slack.decode('ISO-8859-1')
         
         search_exp = '('
         
-        for k in codes.keys():
+        for k in list(codes.keys()):
             for t in types:
                 search_exp = search_exp + k + t + '|'
                 
@@ -462,8 +476,9 @@ class DSStore(object):
                 s_off = prev
                 prev = e_off
                 hex_str = str(slack[s_off:].encode('hex'))
-                block = StringIO.StringIO()
+                block = io.StringIO()
                 block.write(hex_str.decode('hex'))
+                # block.write(bytes.fromhex(hex_str).decode('ISO-8859-1'))
                 
 
                 block.seek(0)
@@ -512,11 +527,11 @@ class DSStore(object):
                 chk = e.filename.encode('ascii', 'replace') + str(e.type) + str(e.code) + self.src_name.encode('ascii', 'replace') + str(e.value).encode('hex')
                 e_hash = hashlib.md5(chk).hexdigest()
                 
-                if not self.dict_list.has_key(e_hash):
+                if e_hash not in self.dict_list:
                     self.entries[e_hash] = e
                     self.dict_list[e_hash] = chk + 'unallocated'
                     
-                elif self.dict_list.has_key(e_hash) and 'unallocated' not in self.dict_list[e_hash]:
+                elif e_hash in self.dict_list and 'unallocated' not in self.dict_list[e_hash]:
                     self.entries[e_hash] = e
                     self.entries[e_hash].node = str(self.entries[e_hash].node) + ', reallocated in {}'.format(node)
                     self.dict_list[e_hash] = chk + ' reallocated'
