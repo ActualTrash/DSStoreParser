@@ -475,9 +475,12 @@ class DSStore(object):
                 e_off = match.regs[0][0]
                 s_off = prev
                 prev = e_off
-                hex_str = str(slack[s_off:].encode('hex'))
+                #hex_str = str(slack[s_off:].encode('hex'))
+                #hex_str = binascii.hexlify(slack[s_off:])
+                hex_str = slack[s_off:].encode('UTF-8')
                 block = io.StringIO()
-                block.write(hex_str.decode('hex'))
+                #block.write(hex_str.decode('hex'))
+                block.write(hex_str.decode())
                 # block.write(bytes.fromhex(hex_str).decode('ISO-8859-1'))
                 
 
